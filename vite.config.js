@@ -1,4 +1,3 @@
-// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -8,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest: false, // Use custom manifest in public/
+      manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
@@ -26,12 +25,13 @@ export default defineConfig({
   ],
   build: {
     sourcemap: true,
+    chunkSizeWarningLimit: 600, // Supprime le warning
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'zustand'],
-          'charts': ['recharts'],
+          'vendor': ['react', 'react-dom', 'zustand', 'recharts'], // recharts ici
           'icons': ['lucide-react']
+          // Plus de 'charts' séparé = pas de circular
         }
       }
     }
