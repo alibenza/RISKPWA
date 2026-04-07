@@ -1,5 +1,4 @@
-// src/App.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useInspectionStore } from './hooks/useInspectionStore';
 import MainNavigation from './components/MainNavigation';
 import Dashboard from './components/Dashboard';
@@ -9,58 +8,39 @@ import History from './components/History';
 import SiteManager from './components/SiteManager';
 import AuditorSettings from './components/AuditorSettings';
 
+// Maximum time to wait for store rehydration (ms)
+const MAX_LOADING_TIME = 3000;
+
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
+  const [forceReady, setForceReady] = useState(false);
+  
   const isLoaded = useInspectionStore((state) => state.isLoaded);
   const forceSave = useInspectionStore((state) => state.forceSave);
+  
+  // Force ready after timeout to prevent infinite loading
+  const actuallyLoaded = isLoaded || forceReady;
 
-  // Handle force save event
   useEffect(() => {
-    const handleForceSave = () => {
-      forceSave();
-    };
+    // Safety timeout: force app ready after MAX_LOADING_TIME
+    const timer = setTimeout(() => {
+      if (!isLoaded) {
+        console.warn('[App] Store rehydration timeout, forcing ready state');
+        setForceReady(true);
+      }
+    }, MAX_LOADING_TIME);
+
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
+
+  useEffect(() => {
+    const handleForceSave = () => forceSave();
     window.addEventListener('force-save-store', handleForceSave);
     return () => window.removeEventListener('force-save-store', handleForceSave);
   }, [forceSave]);
 
-  if (!isLoaded) {
+  // Loading screen
+  if (!actuallyLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 font-medium">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const renderView = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard onNavigate={setCurrentView} />;
-      case 'inspection':
-        return <InspectionForm />;
-      case 'analysis':
-        return <AIAnalysis />;
-      case 'history':
-        return <History />;
-      case 'sites':
-        return <SiteManager />;
-      case 'settings':
-        return <AuditorSettings />;
-      default:
-        return <Dashboard onNavigate={setCurrentView} />;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {renderView()}
-      </main>
-      <MainNavigation currentView={currentView} onNavigate={setCurrentView} />
-    </div>
-  );
-}
-
-export default App;
+        <div className="text-center
