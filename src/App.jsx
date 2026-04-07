@@ -8,7 +8,6 @@ import History from './components/History';
 import SiteManager from './components/SiteManager';
 import AuditorSettings from './components/AuditorSettings';
 
-// Maximum time to wait for store rehydration (ms)
 const MAX_LOADING_TIME = 3000;
 
 function App() {
@@ -18,18 +17,12 @@ function App() {
   const isLoaded = useInspectionStore((state) => state.isLoaded);
   const forceSave = useInspectionStore((state) => state.forceSave);
   
-  // Force ready after timeout to prevent infinite loading
   const actuallyLoaded = isLoaded || forceReady;
 
   useEffect(() => {
-    // Safety timeout: force app ready after MAX_LOADING_TIME
     const timer = setTimeout(() => {
-      if (!isLoaded) {
-        console.warn('[App] Store rehydration timeout, forcing ready state');
-        setForceReady(true);
-      }
+      if (!isLoaded) setForceReady(true);
     }, MAX_LOADING_TIME);
-
     return () => clearTimeout(timer);
   }, [isLoaded]);
 
@@ -39,8 +32,37 @@ function App() {
     return () => window.removeEventListener('force-save-store', handleForceSave);
   }, [forceSave]);
 
-  // Loading screen
   if (!actuallyLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'dashboard': return <Dashboard onNavigate={setCurrentView} />;
+      case 'inspection': return <InspectionForm />;
+      case 'analysis': return <AIAnalysis />;
+      case 'history': return <History />;
+      case 'sites': return <SiteManager />;
+      case 'settings': return <AuditorSettings />;
+      default: return <Dashboard onNavigate={setCurrentView} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {renderView()}
+      </main>
+      <MainNavigation currentView={currentView} onNavigate={setCurrentView} />
+    </div>
+  );
+}
+
+export default App;
